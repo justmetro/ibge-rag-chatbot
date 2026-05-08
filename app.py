@@ -5,13 +5,19 @@ from src.rag import RAGBot
 
 st.set_page_config(
     page_title="IBGE RAG Chatbot",
-    page_icon="📊",
+    page_icon="assets/logo.png",
     layout="centered"
 )
 
 
 with st.sidebar:
-    st.title("📊 IBGE RAG Chatbot")
+    col1, col2 = st.columns([1, 5])
+
+    with col1:
+        st.image("assets/logo.png", width=45)
+
+    with col2:
+        st.markdown("### IBGE RAG Chatbot")
 
     st.markdown(
         """
@@ -20,7 +26,7 @@ with st.sidebar:
         Este app usa RAG para buscar informações em tabelas públicas do IBGE
         sobre indicadores sociais brasileiros.
 
-        **Modo atual:** Demo local sem API paga.
+        **Modo atual:** RAG + Gemini API com fallback demo.
 
         **Tecnologias:**
         - Python
@@ -28,6 +34,7 @@ with st.sidebar:
         - ChromaDB
         - Sentence Transformers
         - LangChain
+        - Gemini API
         """
     )
 
@@ -40,17 +47,26 @@ with st.sidebar:
         - As tabelas têm dados de rendimento?
         - As tabelas possuem dados por sexo ou cor?
         - Quais recortes territoriais aparecem?
+        - Compare o rendimento entre homens e mulheres.
         """
     )
 
     st.divider()
 
-    if st.button("Limpar conversa"):
+    if st.button("Limpar conversa", key="limpar_conversa_sidebar"):
         st.session_state.messages = []
+        st.session_state.bot = None
         st.rerun()
 
 
-st.title("📊 IBGE RAG Chatbot")
+col_logo, col_title = st.columns([1, 8])
+
+with col_logo:
+    st.image("assets/logo.png", width=70)
+
+with col_title:
+    st.title("IBGE RAG Chatbot")
+
 
 st.write(
     """
@@ -60,8 +76,9 @@ st.write(
 )
 
 st.info(
-    "Modo demo: o app usa busca semântica para recuperar trechos relevantes das tabelas. "
-    "A resposta com IA generativa poderá ser ativada depois com uma API LLM."
+    "O app usa busca semântica para recuperar trechos relevantes das tabelas. "
+    "Quando uma chave Gemini está configurada, a resposta é sintetizada por IA generativa; "
+    "caso contrário, o app usa o modo demo."
 )
 
 st.divider()
