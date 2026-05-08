@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 import google.genai as genai
 
-from src.query_expansion import expand_query
 from src.vectorstore import get_retriever
+from src.query_expansion import expand_query
 from src.prompts import (
     GEMINI_SYSTEM_PROMPT,
     DEMO_FALLBACK_MESSAGE,
@@ -148,6 +148,7 @@ class RAGBot:
 
     def ask(self, question: str):
         expanded_question = expand_query(question)
+
         docs = self.retriever.invoke(expanded_question)
         docs = self._filtrar_docs_por_pergunta(question, docs)
 
@@ -156,25 +157,21 @@ class RAGBot:
                 "answer": "Não encontrei informações suficientes nos documentos carregados.",
                 "sources": [],
                 "context_docs": [],
+                "retrieved_context": "",
             }
 
         sources, trechos = self._formatar_trechos(docs)
+        retrieved_context = "\n\n---\n\n".join(trechos)
 
         if self.client:
             try:
                 resposta_gemini = self._responder_com_gemini(question, docs)
 
-                answer = (
-                    f"{resposta_gemini}\n\n"
-                    "---\n\n"
-                    "### Trechos utilizados pelo RAG\n\n"
-                    + "\n\n---\n\n".join(trechos)
-                )
-
                 return {
-                    "answer": answer,
+                    "answer": resposta_gemini,
                     "sources": sources,
                     "context_docs": docs,
+                    "retrieved_context": retrieved_context,
                 }
 
             except Exception as e:
@@ -183,28 +180,26 @@ class RAGBot:
                 answer = (
                     f"{GEMINI_ERROR_FALLBACK_MESSAGE.strip()}\n\n"
                     f"Erro técnico: `{e}`\n\n"
-                    f"{resumo}\n\n"
-                    "Abaixo estão os trechos mais relevantes encontrados pelo sistema de busca semântica:\n\n"
-                    + "\n\n---\n\n".join(trechos)
+                    f"{resumo}"
                 )
 
                 return {
                     "answer": answer,
                     "sources": sources,
                     "context_docs": docs,
+                    "retrieved_context": retrieved_context,
                 }
 
         resumo = self._gerar_resumo_demo(docs)
 
         answer = (
             f"{resumo}\n\n"
-            "Abaixo estão os trechos mais relevantes encontrados pelo sistema de busca semântica:\n\n"
-            + "\n\n---\n\n".join(trechos)
-            + f"\n\n> {DEMO_FALLBACK_MESSAGE.strip()}"
+            f"> {DEMO_FALLBACK_MESSAGE.strip()}"
         )
 
         return {
             "answer": answer,
             "sources": sources,
             "context_docs": docs,
+            "retrieved_context": retrieved_context,
         }

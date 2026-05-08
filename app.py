@@ -101,6 +101,15 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+        if message["role"] == "assistant" and message.get("retrieved_context"):
+            with st.expander("Ver trechos utilizados pelo RAG"):
+                st.markdown(message["retrieved_context"])
+
+        if message["role"] == "assistant" and message.get("sources"):
+            st.caption(
+                "Fontes usadas: " + ", ".join(message["sources"])
+            )
+
 
 pergunta = st.chat_input("Pergunte algo sobre dados sociais brasileiros...")
 
@@ -122,13 +131,22 @@ if pergunta:
 
                 st.markdown(resposta)
 
+                if resultado.get("retrieved_context"):
+                    with st.expander("Ver trechos utilizados pelo RAG"):
+                        st.markdown(resultado["retrieved_context"])
+
                 if resultado["sources"]:
                     st.caption(
                         "Fontes usadas: " + ", ".join(resultado["sources"])
                     )
 
                 st.session_state.messages.append(
-                    {"role": "assistant", "content": resposta}
+                    {
+                        "role": "assistant",
+                        "content": resposta,
+                        "retrieved_context": resultado.get("retrieved_context", ""),
+                        "sources": resultado.get("sources", []),
+                    }
                 )
 
             except Exception as e:
