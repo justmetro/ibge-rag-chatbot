@@ -3,11 +3,30 @@ def expand_query(question: str) -> str:
     Expande perguntas do usuário com termos semanticamente úteis
     para melhorar a recuperação no banco vetorial.
 
-    Esta etapa é simples e transparente: não altera a pergunta original,
-    apenas adiciona termos de busca quando detecta temas específicos.
+    A pergunta original é preservada. Apenas adicionamos termos de busca
+    relacionados ao tema detectado.
     """
     question_lower = question.lower()
     extra_terms = []
+
+    asks_for_values = (
+        "valor" in question_lower
+        or "valores" in question_lower
+        or "quanto" in question_lower
+        or "r$" in question_lower
+        or "reais" in question_lower
+    )
+
+    if asks_for_values:
+        extra_terms.extend([
+            "Indicadores de rendimento do trabalho",
+            "rendimento médio real habitual do trabalho principal",
+            "valores monetários",
+            "R$/mês",
+            "Brasil",
+            "Norte",
+            "Rondônia",
+        ])
 
     if (
         "homem" in question_lower
@@ -49,9 +68,19 @@ def expand_query(question: str) -> str:
             "R$/hora",
         ])
 
+    if (
+        "coeficiente" in question_lower
+        or "coeficientes" in question_lower
+        or "variação" in question_lower
+        or "variacao" in question_lower
+        or "cv" in question_lower
+    ):
+        extra_terms.extend([
+            "coeficientes de variação",
+            "coeficiente de variação dos indicadores",
+        ])
+
     if not extra_terms:
         return question
 
-    expanded = question + " " + " ".join(extra_terms)
-
-    return expanded
+    return question + " " + " ".join(extra_terms)

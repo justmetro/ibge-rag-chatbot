@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -12,14 +13,44 @@ CHROMA_PATH = ".chroma"
 
 CHUNK_SIZE = 900
 CHUNK_OVERLAP = 150
-RETRIEVER_K = 5
+RETRIEVER_K = int(os.getenv("RETRIEVER_K", "12"))
+
+
+def is_coefficient_text(text: str) -> bool:
+    text_lower = text.lower()
+
+    return (
+        "coeficientes de variação" in text_lower
+        or "coeficientes de variacao" in text_lower
+    )
+
+
+def split_text_into_blocks(text: str):
+    """
+    Divide o documents.txt em blocos menores antes do chunking.
+
+    O table_loader.py separa tabelas com linhas de '='.
+    Separar por blocos ajuda o Chroma a recuperar tabelas mais específicas.
+    """
+    raw_blocks = text.split("=" * 80)
+
+    blocks = [
+        block.strip()
+        for block in raw_blocks
+        if block.strip()
+    ]
+
+    if blocks:
+        return blocks
+
+    return [text]
 
 
 def load_documents():
     """
     Carrega o arquivo textual gerado a partir das tabelas do IBGE.
 
-    O arquivo data/documents.txt é produzido pelo table_loader.py.
+    Cada bloco recebe metadata indicando se é tabela de coeficiente de variação.
     """
     if not DATA_PATH.exists():
         raise FileNotFoundError("Arquivo data/documents.txt não encontrado.")
@@ -29,12 +60,23 @@ def load_documents():
     if not text.strip():
         raise ValueError("O arquivo data/documents.txt está vazio.")
 
-    return [
-        Document(
-            page_content=text,
-            metadata={"source": str(DATA_PATH)}
+    blocks = split_text_into_blocks(text)
+
+    documents = []
+
+    for index, block in enumerate(blocks, start=1):
+        documents.append(
+            Document(
+                page_content=block,
+                metadata={
+                    "source": str(DATA_PATH),
+                    "block_id": index,
+                    "is_coefficient": is_coefficient_text(block),
+                },
+            )
         )
-    ]
+
+    return documents
 
 
 def split_documents(documents):
@@ -78,11 +120,34 @@ def load_vectorstore():
     )
 
 
+def retrieve_documents(question: str, include_coefficients: bool = False):
+    """
+    Recupera documentos relevantes no ChromaDB.
+
+    Se include_coefficients=False, remove tabelas de coeficientes diretamente
+    na busca usando metadata.
+    """
+    if not Path(CHROMA_PATH).exists():
+        vectorstore = create_vectorstore()
+    else:
+        vectorstore = load_vectorstore()
+
+    if include_coefficients:
+        return vectorstore.similarity_search(
+            query=question,
+            k=RETRIEVER_K,
+        )
+
+    return vectorstore.similarity_search(
+        query=question,
+        k=RETRIEVER_K,
+        filter={"is_coefficient": False},
+    )
+
+
 def get_retriever():
     """
-    Retorna o retriever usado pelo RAG.
-
-    Caso a base Chroma ainda não exista, ela é criada automaticamente.
+    Mantido por compatibilidade com scripts antigos.
     """
     if not Path(CHROMA_PATH).exists():
         vectorstore = create_vectorstore()

@@ -3,8 +3,10 @@ import os
 from dotenv import load_dotenv
 import google.genai as genai
 
-from src.vectorstore import get_retriever
+from src.vectorstore import retrieve_documents
 from src.query_expansion import expand_query
+from src.document_filters import user_wants_coefficient
+from src.document_filters import filter_retrieved_documents
 from src.prompts import (
     GEMINI_SYSTEM_PROMPT,
     DEMO_FALLBACK_MESSAGE,
@@ -17,38 +19,12 @@ load_dotenv()
 
 class RAGBot:
     def __init__(self):
-        self.retriever = get_retriever()
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
 
         if self.gemini_api_key:
             self.client = genai.Client(api_key=self.gemini_api_key)
         else:
             self.client = None
-
-    def _filtrar_docs_por_pergunta(self, question, docs):
-        pergunta = question.lower()
-
-        usuario_quer_coeficiente = (
-            "coeficiente" in pergunta
-            or "variação" in pergunta
-            or "variacao" in pergunta
-            or "cv" in pergunta
-        )
-
-        if usuario_quer_coeficiente:
-            return docs
-
-        docs_sem_coeficiente = [
-            doc
-            for doc in docs
-            if "coeficientes de variação" not in doc.page_content.lower()
-            and "coeficientes de variacao" not in doc.page_content.lower()
-        ]
-
-        if docs_sem_coeficiente:
-            return docs_sem_coeficiente
-
-        return docs
 
     def _gerar_resumo_demo(self, docs):
         texto_completo = " ".join(
@@ -139,18 +115,37 @@ class RAGBot:
             context=contexto,
         )
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
+        models_to_try = [
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+        ]
 
-        return response.text
+        last_error = None
+
+        for model_name in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+
+                return response.text
+
+            except Exception as e:
+                last_error = e
+
+        raise last_error
 
     def ask(self, question: str):
         expanded_question = expand_query(question)
 
-        docs = self.retriever.invoke(expanded_question)
-        docs = self._filtrar_docs_por_pergunta(question, docs)
+        include_coefficients = user_wants_coefficient(question)
+
+        docs = retrieve_documents(
+            question=expanded_question,
+            include_coefficients=include_coefficients,
+        )
 
         if not docs:
             return {
