@@ -11,3 +11,4 @@ pypdf
 openpyxl
 xlrd
 protobuf==3.20.3
+google-genai
