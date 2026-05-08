@@ -4,6 +4,11 @@ from dotenv import load_dotenv
 import google.genai as genai
 
 from src.vectorstore import get_retriever
+from src.prompts import (
+    GEMINI_SYSTEM_PROMPT,
+    DEMO_FALLBACK_MESSAGE,
+    GEMINI_ERROR_FALLBACK_MESSAGE,
+)
 
 
 load_dotenv()
@@ -33,7 +38,8 @@ class RAGBot:
             return docs
 
         docs_sem_coeficiente = [
-            doc for doc in docs
+            doc
+            for doc in docs
             if "coeficientes de variação" not in doc.page_content.lower()
             and "coeficientes de variacao" not in doc.page_content.lower()
         ]
@@ -69,8 +75,13 @@ class RAGBot:
         if "cor ou raça" in texto_completo:
             achados.append("recortes por cor ou raça")
 
-        if "grandes regiões" in texto_completo or "unidades da federação" in texto_completo:
-            achados.append("recortes territoriais por Grandes Regiões e Unidades da Federação")
+        if (
+            "grandes regiões" in texto_completo
+            or "unidades da federação" in texto_completo
+        ):
+            achados.append(
+                "recortes territoriais por Grandes Regiões e Unidades da Federação"
+            )
 
         if not achados:
             return (
@@ -122,25 +133,10 @@ class RAGBot:
             ]
         )
 
-        prompt = f"""
-Você é um assistente especializado em análise de dados sociais brasileiros.
-
-Responda à pergunta do usuário usando apenas o contexto fornecido.
-Não invente números, anos, fontes ou conclusões.
-Se a informação não estiver clara no contexto, diga isso.
-Use linguagem clara, objetiva e adequada para um projeto de portfólio em dados.
-
-Quando houver valores monetários, formate em reais com duas casas decimais.
-Quando houver comparação entre grupos, explique a diferença de forma simples.
-
-Pergunta do usuário:
-{question}
-
-Contexto recuperado pelo RAG:
-{contexto}
-
-Resposta:
-"""
+        prompt = GEMINI_SYSTEM_PROMPT.format(
+            question=question,
+            context=contexto,
+        )
 
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
@@ -157,7 +153,7 @@ Resposta:
             return {
                 "answer": "Não encontrei informações suficientes nos documentos carregados.",
                 "sources": [],
-                "context_docs": []
+                "context_docs": [],
             }
 
         sources, trechos = self._formatar_trechos(docs)
@@ -176,15 +172,14 @@ Resposta:
                 return {
                     "answer": answer,
                     "sources": sources,
-                    "context_docs": docs
+                    "context_docs": docs,
                 }
 
             except Exception as e:
                 resumo = self._gerar_resumo_demo(docs)
 
                 answer = (
-                    "Não foi possível gerar resposta com Gemini no momento. "
-                    "O app voltou para o modo demo.\n\n"
+                    f"{GEMINI_ERROR_FALLBACK_MESSAGE.strip()}\n\n"
                     f"Erro técnico: `{e}`\n\n"
                     f"{resumo}\n\n"
                     "Abaixo estão os trechos mais relevantes encontrados pelo sistema de busca semântica:\n\n"
@@ -194,7 +189,7 @@ Resposta:
                 return {
                     "answer": answer,
                     "sources": sources,
-                    "context_docs": docs
+                    "context_docs": docs,
                 }
 
         resumo = self._gerar_resumo_demo(docs)
@@ -203,12 +198,11 @@ Resposta:
             f"{resumo}\n\n"
             "Abaixo estão os trechos mais relevantes encontrados pelo sistema de busca semântica:\n\n"
             + "\n\n---\n\n".join(trechos)
-            + "\n\n> Modo demo: por enquanto o app retorna uma síntese simples e os trechos recuperados pelo RAG. "
-            "Quando uma API de LLM estiver ativa, esses trechos serão usados para gerar uma resposta mais natural e contextualizada."
+            + f"\n\n> {DEMO_FALLBACK_MESSAGE.strip()}"
         )
 
         return {
             "answer": answer,
             "sources": sources,
-            "context_docs": docs
+            "context_docs": docs,
         }
