@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import google.genai as genai
 
+from src.query_expansion import expand_query
 from src.vectorstore import get_retriever
 from src.prompts import (
     GEMINI_SYSTEM_PROMPT,
@@ -146,7 +147,8 @@ class RAGBot:
         return response.text
 
     def ask(self, question: str):
-        docs = self.retriever.invoke(question)
+        expanded_question = expand_query(question)
+        docs = self.retriever.invoke(expanded_question)
         docs = self._filtrar_docs_por_pergunta(question, docs)
 
         if not docs:
