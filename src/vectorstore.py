@@ -1,22 +1,26 @@
 from pathlib import Path
 
 from langchain_chroma import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+
+from src.embedder import get_embeddings
 
 
 DATA_PATH = Path("data/documents.txt")
 CHROMA_PATH = ".chroma"
 
-
-def get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
+CHUNK_SIZE = 900
+CHUNK_OVERLAP = 150
+RETRIEVER_K = 5
 
 
 def load_documents():
+    """
+    Carrega o arquivo textual gerado a partir das tabelas do IBGE.
+
+    O arquivo data/documents.txt é produzido pelo table_loader.py.
+    """
     if not DATA_PATH.exists():
         raise FileNotFoundError("Arquivo data/documents.txt não encontrado.")
 
@@ -28,21 +32,29 @@ def load_documents():
     return [
         Document(
             page_content=text,
-            metadata={"source": "data/documents.txt"}
+            metadata={"source": str(DATA_PATH)}
         )
     ]
 
 
-def create_vectorstore():
-    documents = load_documents()
-
+def split_documents(documents):
+    """
+    Divide documentos longos em chunks menores para recuperação semântica.
+    """
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=900,
-        chunk_overlap=150
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP
     )
 
-    chunks = splitter.split_documents(documents)
+    return splitter.split_documents(documents)
 
+
+def create_vectorstore():
+    """
+    Cria a base vetorial Chroma a partir dos documentos processados.
+    """
+    documents = load_documents()
+    chunks = split_documents(documents)
     embeddings = get_embeddings()
 
     vectorstore = Chroma.from_documents(
@@ -55,6 +67,9 @@ def create_vectorstore():
 
 
 def load_vectorstore():
+    """
+    Carrega uma base vetorial Chroma já existente.
+    """
     embeddings = get_embeddings()
 
     return Chroma(
@@ -64,11 +79,16 @@ def load_vectorstore():
 
 
 def get_retriever():
+    """
+    Retorna o retriever usado pelo RAG.
+
+    Caso a base Chroma ainda não exista, ela é criada automaticamente.
+    """
     if not Path(CHROMA_PATH).exists():
         vectorstore = create_vectorstore()
     else:
         vectorstore = load_vectorstore()
 
     return vectorstore.as_retriever(
-        search_kwargs={"k": 5}
+        search_kwargs={"k": RETRIEVER_K}
     )
