@@ -6,14 +6,14 @@ Status: PASSOU
 Documentos retornados: 5
 Termos esperados: rendimento, trabalho
 Termos encontrados: rendimento, trabalho
-Latencia: 0.049s
+Latencia: 0.05s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas tem dados de rendimento?
 Status: PASSOU
 Documentos retornados: 5
 Termos esperados: rendimento, r$/mes
 Termos encontrados: rendimento, r$/mes
-Latencia: 0.013s
+Latencia: 0.014s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas possuem dados por sexo ou cor?
 Status: PASSOU
@@ -34,11 +34,11 @@ Status: PASSOU
 Documentos retornados: 5
 Termos esperados: homem, mulher
 Termos encontrados: homem, mulher
-Latencia: 0.013s
+Latencia: 0.015s
 --------------------------------------------------------------------------------
 
 Resumo
 Total de testes: 5
 Testes aprovados: 5
 Taxa de sucesso simples: 100%
-Latencia media: 0.020s
+Latencia media: 0.021s
