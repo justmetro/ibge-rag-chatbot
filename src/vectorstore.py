@@ -70,5 +70,5 @@ def get_retriever():
         vectorstore = load_vectorstore()
 
     return vectorstore.as_retriever(
-        search_kwargs={"k": 3}
+        search_kwargs={"k": 5}
     )

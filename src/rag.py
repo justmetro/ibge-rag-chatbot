@@ -1,9 +1,47 @@
+import os
+
+from dotenv import load_dotenv
+import google.genai as genai
+
 from src.vectorstore import get_retriever
+
+
+load_dotenv()
 
 
 class RAGBot:
     def __init__(self):
         self.retriever = get_retriever()
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+        if self.gemini_api_key:
+            self.client = genai.Client(api_key=self.gemini_api_key)
+        else:
+            self.client = None
+
+    def _filtrar_docs_por_pergunta(self, question, docs):
+        pergunta = question.lower()
+
+        usuario_quer_coeficiente = (
+            "coeficiente" in pergunta
+            or "variação" in pergunta
+            or "variacao" in pergunta
+            or "cv" in pergunta
+        )
+
+        if usuario_quer_coeficiente:
+            return docs
+
+        docs_sem_coeficiente = [
+            doc for doc in docs
+            if "coeficientes de variação" not in doc.page_content.lower()
+            and "coeficientes de variacao" not in doc.page_content.lower()
+        ]
+
+        if docs_sem_coeficiente:
+            return docs_sem_coeficiente
+
+        return docs
 
     def _gerar_resumo_demo(self, docs):
         texto_completo = " ".join(
@@ -41,6 +79,7 @@ class RAGBot:
             )
 
         achados_unicos = []
+
         for item in achados:
             if item not in achados_unicos:
                 achados_unicos.append(item)
@@ -51,20 +90,9 @@ class RAGBot:
             + "."
         )
 
-    def ask(self, question: str):
-        docs = self.retriever.invoke(question)
-
-        if not docs:
-            return {
-                "answer": "Não encontrei informações suficientes nos documentos carregados.",
-                "sources": [],
-                "context_docs": []
-            }
-
+    def _formatar_trechos(self, docs):
         sources = []
         trechos = []
-
-        resumo = self._gerar_resumo_demo(docs)
 
         for i, doc in enumerate(docs, start=1):
             source = doc.metadata.get("source", "Fonte desconhecida")
@@ -83,6 +111,93 @@ class RAGBot:
             )
 
             trechos.append(bloco)
+
+        return sources, trechos
+
+    def _responder_com_gemini(self, question, docs):
+        contexto = "\n\n".join(
+            [
+                f"Fonte: {doc.metadata.get('source', 'Fonte desconhecida')}\n{doc.page_content}"
+                for doc in docs
+            ]
+        )
+
+        prompt = f"""
+Você é um assistente especializado em análise de dados sociais brasileiros.
+
+Responda à pergunta do usuário usando apenas o contexto fornecido.
+Não invente números, anos, fontes ou conclusões.
+Se a informação não estiver clara no contexto, diga isso.
+Use linguagem clara, objetiva e adequada para um projeto de portfólio em dados.
+
+Quando houver valores monetários, formate em reais com duas casas decimais.
+Quando houver comparação entre grupos, explique a diferença de forma simples.
+
+Pergunta do usuário:
+{question}
+
+Contexto recuperado pelo RAG:
+{contexto}
+
+Resposta:
+"""
+
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+
+        return response.text
+
+    def ask(self, question: str):
+        docs = self.retriever.invoke(question)
+        docs = self._filtrar_docs_por_pergunta(question, docs)
+
+        if not docs:
+            return {
+                "answer": "Não encontrei informações suficientes nos documentos carregados.",
+                "sources": [],
+                "context_docs": []
+            }
+
+        sources, trechos = self._formatar_trechos(docs)
+
+        if self.client:
+            try:
+                resposta_gemini = self._responder_com_gemini(question, docs)
+
+                answer = (
+                    f"{resposta_gemini}\n\n"
+                    "---\n\n"
+                    "### Trechos utilizados pelo RAG\n\n"
+                    + "\n\n---\n\n".join(trechos)
+                )
+
+                return {
+                    "answer": answer,
+                    "sources": sources,
+                    "context_docs": docs
+                }
+
+            except Exception as e:
+                resumo = self._gerar_resumo_demo(docs)
+
+                answer = (
+                    "Não foi possível gerar resposta com Gemini no momento. "
+                    "O app voltou para o modo demo.\n\n"
+                    f"Erro técnico: `{e}`\n\n"
+                    f"{resumo}\n\n"
+                    "Abaixo estão os trechos mais relevantes encontrados pelo sistema de busca semântica:\n\n"
+                    + "\n\n---\n\n".join(trechos)
+                )
+
+                return {
+                    "answer": answer,
+                    "sources": sources,
+                    "context_docs": docs
+                }
+
+        resumo = self._gerar_resumo_demo(docs)
 
         answer = (
             f"{resumo}\n\n"
