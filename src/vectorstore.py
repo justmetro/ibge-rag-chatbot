@@ -13,7 +13,7 @@ CHROMA_PATH = ".chroma"
 
 CHUNK_SIZE = 900
 CHUNK_OVERLAP = 150
-RETRIEVER_K = int(os.getenv("RETRIEVER_K", "12"))
+RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
 
 
 def is_coefficient_text(text: str) -> bool:

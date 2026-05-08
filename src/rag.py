@@ -118,7 +118,6 @@ class RAGBot:
         models_to_try = [
             "gemini-2.5-flash",
             "gemini-2.0-flash",
-            "gemini-2.0-flash-lite",
         ]
 
         last_error = None
@@ -174,7 +173,8 @@ class RAGBot:
 
                 answer = (
                     f"{GEMINI_ERROR_FALLBACK_MESSAGE.strip()}\n\n"
-                    f"Erro técnico: `{e}`\n\n"
+                    "A API generativa não respondeu no momento, possivelmente por limite temporário de uso. "
+                    "Mesmo assim, o app recuperou os trechos relevantes localmente e exibiu uma síntese simples.\n\n"
                     f"{resumo}"
                 )
 
