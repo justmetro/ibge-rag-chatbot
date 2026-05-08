@@ -29,6 +29,16 @@ O sistema permite que o usuário faça perguntas sobre indicadores sociais brasi
 - Exibição dos trechos e fontes utilizadas
 - Modo demo sem dependência de API paga
 
+## Screenshots
+
+### Tela inicial
+
+![Tela inicial do app](assets/home.png)
+
+### Exemplo de resposta
+
+![Exemplo de resposta do chatbot](assets/resposta.png)
+
 ## Dados utilizados
 
 O projeto utiliza tabelas públicas do IBGE relacionadas a indicadores sociais brasileiros, incluindo informações sobre rendimento, trabalho, sexo, cor ou raça e recortes territoriais.
