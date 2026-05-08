@@ -1,0 +1,12 @@
+streamlit
+anthropic
+python-dotenv
+sentence-transformers
+chromadb
+langchain
+langchain-community
+langchain-chroma
+langchain-text-splitters
+pypdf
+openpyxl
+xlrd
