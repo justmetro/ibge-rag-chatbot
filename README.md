@@ -29,6 +29,12 @@ O sistema permite que o usuário faça perguntas sobre indicadores sociais brasi
 - Exibição dos trechos e fontes utilizadas
 - Modo demo sem dependência de API paga
 
+## Deploy
+
+A aplicação está disponível em:
+
+https://ibge-rag-chatbot-justmetro.streamlit.app/
+
 ## Screenshots
 
 ### Tela inicial
