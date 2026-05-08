@@ -120,3 +120,19 @@ Nesta versão, o sistema recupera trechos relevantes das tabelas carregadas e ap
 ## Cuidados de segurança
 
 Este projeto não versiona arquivos `.env` nem chaves de API.
+
+## Limitações e próximos passos
+
+A versão atual funciona em modo demo local. Isso significa que o sistema já realiza a leitura das tabelas, cria uma base vetorial, recupera trechos relevantes e apresenta uma síntese simples com base nos documentos encontrados.
+
+Como próximos passos, o projeto pode evoluir para:
+
+- Integração com uma API de LLM, como Claude ou OpenAI, para gerar respostas mais naturais e contextualizadas
+- Melhoria no tratamento de tabelas complexas do IBGE
+- Inclusão de mais bases públicas sobre educação, trabalho, rendimento e desigualdade
+- Exibição de gráficos e tabelas resumidas na interface
+- Deploy público em Hugging Face Spaces ou Streamlit Community Cloud
+
+## Aprendizados
+
+Este projeto foi desenvolvido como uma aplicação prática de RAG aplicada a dados públicos brasileiros. Durante o desenvolvimento, foram trabalhados conceitos de processamento de dados, embeddings, busca semântica, banco vetorial, organização de projeto Python e construção de interface com Streamlit.
