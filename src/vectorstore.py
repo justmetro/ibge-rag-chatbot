@@ -1,9 +1,21 @@
+"""
+Vector store creation and retrieval logic.
+
+This module is responsible for transforming the processed IBGE text file
+into LangChain Document objects, splitting them into chunks, embedding them
+and storing them in ChromaDB.
+
+It also exposes a retrieval function that supports metadata filtering. This
+is used to avoid coefficient-of-variation tables when the user asks for
+actual indicator values.
+"""
+
 import os
 from pathlib import Path
 
 from langchain_chroma import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.embedder import get_embeddings
 
@@ -17,6 +29,16 @@ RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
 
 
 def is_coefficient_text(text: str) -> bool:
+    """
+    Check whether a text block comes from a coefficient-of-variation table.
+
+    Args:
+        text: Text block extracted from the processed IBGE documents.
+
+    Returns:
+        True if the block appears to represent coefficient-of-variation data;
+        False otherwise.
+    """
     text_lower = text.lower()
 
     return (
@@ -27,10 +49,18 @@ def is_coefficient_text(text: str) -> bool:
 
 def split_text_into_blocks(text: str):
     """
-    Divide o documents.txt em blocos menores antes do chunking.
+    Split the processed text file into table-level blocks.
 
-    O table_loader.py separa tabelas com linhas de '='.
-    Separar por blocos ajuda o Chroma a recuperar tabelas mais específicas.
+    The table loader separates extracted tables using lines of '=' characters.
+    Splitting by these separators before chunking helps preserve table context
+    and allows metadata to be assigned at the block level.
+
+    Args:
+        text: Full text content from data/documents.txt.
+
+    Returns:
+        List of non-empty text blocks. If no separator is found, returns the
+        full text as a single block.
     """
     raw_blocks = text.split("=" * 80)
 
@@ -48,9 +78,18 @@ def split_text_into_blocks(text: str):
 
 def load_documents():
     """
-    Carrega o arquivo textual gerado a partir das tabelas do IBGE.
+    Load processed IBGE text data as LangChain Document objects.
 
-    Cada bloco recebe metadata indicando se é tabela de coeficiente de variação.
+    Each block receives metadata indicating its source, block ID and whether
+    it represents coefficient-of-variation data. This metadata is later used
+    by ChromaDB filters during retrieval.
+
+    Returns:
+        List of LangChain Document objects.
+
+    Raises:
+        FileNotFoundError: If data/documents.txt does not exist.
+        ValueError: If data/documents.txt exists but is empty.
     """
     if not DATA_PATH.exists():
         raise FileNotFoundError("Arquivo data/documents.txt não encontrado.")
@@ -81,11 +120,17 @@ def load_documents():
 
 def split_documents(documents):
     """
-    Divide documentos longos em chunks menores para recuperação semântica.
+    Split loaded documents into smaller chunks for semantic retrieval.
+
+    Args:
+        documents: List of LangChain Document objects.
+
+    Returns:
+        List of chunked LangChain Document objects.
     """
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP
+        chunk_overlap=CHUNK_OVERLAP,
     )
 
     return splitter.split_documents(documents)
@@ -93,7 +138,10 @@ def split_documents(documents):
 
 def create_vectorstore():
     """
-    Cria a base vetorial Chroma a partir dos documentos processados.
+    Create and persist a ChromaDB vector store from processed documents.
+
+    Returns:
+        Chroma: Persisted Chroma vector store instance.
     """
     documents = load_documents()
     chunks = split_documents(documents)
@@ -102,7 +150,7 @@ def create_vectorstore():
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
-        persist_directory=CHROMA_PATH
+        persist_directory=CHROMA_PATH,
     )
 
     return vectorstore
@@ -110,22 +158,34 @@ def create_vectorstore():
 
 def load_vectorstore():
     """
-    Carrega uma base vetorial Chroma já existente.
+    Load an existing ChromaDB vector store from disk.
+
+    Returns:
+        Chroma: Previously persisted vector store instance.
     """
     embeddings = get_embeddings()
 
     return Chroma(
         persist_directory=CHROMA_PATH,
-        embedding_function=embeddings
+        embedding_function=embeddings,
     )
 
 
 def retrieve_documents(question: str, include_coefficients: bool = False):
     """
-    Recupera documentos relevantes no ChromaDB.
+    Retrieve relevant chunks from ChromaDB.
 
-    Se include_coefficients=False, remove tabelas de coeficientes diretamente
-    na busca usando metadata.
+    When include_coefficients is False, coefficient-of-variation chunks are
+    filtered out using metadata. This helps reduce noise when the user asks
+    for actual indicator values rather than statistical precision measures.
+
+    Args:
+        question: Expanded or original user query.
+        include_coefficients: Whether coefficient-of-variation documents should
+            be allowed in the search results.
+
+    Returns:
+        List of relevant LangChain Document objects.
     """
     if not Path(CHROMA_PATH).exists():
         vectorstore = create_vectorstore()
@@ -147,7 +207,13 @@ def retrieve_documents(question: str, include_coefficients: bool = False):
 
 def get_retriever():
     """
-    Mantido por compatibilidade com scripts antigos.
+    Return a LangChain retriever for compatibility with older scripts.
+
+    New code should prefer retrieve_documents(), because it supports metadata
+    filtering. This function is kept to avoid breaking previous integrations.
+
+    Returns:
+        LangChain retriever object backed by ChromaDB.
     """
     if not Path(CHROMA_PATH).exists():
         vectorstore = create_vectorstore()
