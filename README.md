@@ -199,6 +199,24 @@ Latência média: 3.134s
 
 Essa avaliação usa métricas heurísticas baseadas em termos esperados. Ela não substitui um benchmark formal rotulado, mas ajuda a monitorar qualidade de recuperação e latência durante o desenvolvimento.
 
+## Testes e CI
+
+O projeto possui testes automatizados com `pytest`, cobrindo partes centrais da lógica do RAG:
+
+- Expansão de consultas
+- Filtros de documentos recuperados
+- Métricas da avaliação do retriever
+
+Atualmente, a suíte possui 16 testes unitários.
+
+Também foi configurado um workflow de GitHub Actions em `.github/workflows/tests.yml`, que executa os testes automaticamente a cada `push` ou `pull request`.
+
+Para rodar os testes localmente:
+
+```bash
+pytest
+```
+
 ## Como rodar localmente
 
 Crie e ative o ambiente virtual:
