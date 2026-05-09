@@ -1,3 +1,12 @@
+"""
+Prompt templates and fallback messages used by the RAG pipeline.
+
+This module centralizes all user-facing and model-facing prompt text. Keeping
+prompts in one place makes it easier to audit model instructions, change tone,
+add constraints and compare prompt versions without modifying the RAG logic.
+"""
+
+
 GEMINI_SYSTEM_PROMPT = """
 Você é um assistente especializado em análise de dados sociais brasileiros.
 
