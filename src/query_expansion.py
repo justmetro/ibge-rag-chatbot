@@ -1,10 +1,34 @@
+"""
+Query expansion utilities for the RAG retrieval step.
+
+This module expands user questions with additional domain-specific terms
+before sending them to the vector database. The goal is to improve recall
+for common themes in the IBGE tables, such as income, sex, race/color,
+territorial cuts and coefficient-of-variation tables.
+
+The original user question is preserved. Extra terms are appended only to
+help the retriever find better chunks.
+"""
+
+
 def expand_query(question: str) -> str:
     """
-    Expande perguntas do usuário com termos semanticamente úteis
-    para melhorar a recuperação no banco vetorial.
+    Expand a user question with semantically useful search terms.
 
-    A pergunta original é preservada. Apenas adicionamos termos de busca
-    relacionados ao tema detectado.
+    The expansion is intentionally rule-based and transparent. It helps the
+    retriever find relevant table chunks when the user's wording is shorter
+    or different from the wording used in the original IBGE tables.
+
+    Args:
+        question: Original user question.
+
+    Returns:
+        The original question plus extra terms when a known topic is detected.
+        If no topic is detected, returns the original question unchanged.
+
+    Examples:
+        >>> expand_query("Compare homens e mulheres")
+        'Compare homens e mulheres sexo homem mulher rendimento trabalho principal'
     """
     question_lower = question.lower()
     extra_terms = []
