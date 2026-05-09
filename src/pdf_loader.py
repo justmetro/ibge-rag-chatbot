@@ -1,3 +1,15 @@
+"""
+PDF loading utilities for optional IBGE document ingestion.
+
+This module extracts text from PDF files stored in data/pdfs and writes the
+result to data/processed_pdfs.txt. It is not required for the current table-based
+MVP, but it makes the project extensible to IBGE reports, methodological notes
+and other public documents distributed as PDFs.
+
+Example:
+    python src/pdf_loader.py
+"""
+
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -11,7 +23,14 @@ SUPPORTED_EXTENSIONS = [".pdf"]
 
 def clean_text(text: str) -> str:
     """
-    Limpa o texto extraído de páginas de PDF.
+    Clean raw text extracted from a PDF page.
+
+    Args:
+        text: Raw text returned by pypdf.
+
+    Returns:
+        Cleaned text with empty lines removed. Returns an empty string when
+        no text is available.
     """
     if not text:
         return ""
@@ -27,7 +46,18 @@ def clean_text(text: str) -> str:
 
 def extract_text_from_pdf(path: Path) -> str:
     """
-    Extrai texto de um arquivo PDF usando pypdf.
+    Extract text from one PDF file.
+
+    Args:
+        path: Path to the PDF file.
+
+    Returns:
+        Text extracted from all readable pages, including source and page
+        metadata in plain text.
+
+    Raises:
+        Exception: Propagates errors raised by pypdf when the file cannot be
+        opened or parsed.
     """
     reader = PdfReader(str(path))
 
@@ -47,16 +77,21 @@ def extract_text_from_pdf(path: Path) -> str:
 
 def build_documents_from_pdfs() -> None:
     """
-    Processa todos os PDFs dentro de data/pdfs e gera um arquivo textual.
+    Process all PDF files in data/pdfs and write extracted text to disk.
 
-    Este loader é opcional no projeto atual, mas permite evoluir o RAG
-    para usar relatórios e publicações em PDF do IBGE.
+    This loader is optional in the current project, but it allows the RAG
+    pipeline to be extended with PDF-based IBGE publications.
+
+    Raises:
+        FileNotFoundError: If data/pdfs does not exist or contains no PDFs.
+        ValueError: If no text can be extracted from the available PDFs.
     """
     if not PDFS_DIR.exists():
         raise FileNotFoundError("A pasta data/pdfs não existe.")
 
     files = [
-        path for path in PDFS_DIR.iterdir()
+        path
+        for path in PDFS_DIR.iterdir()
         if path.suffix.lower() in SUPPORTED_EXTENSIONS
     ]
 
@@ -74,8 +109,8 @@ def build_documents_from_pdfs() -> None:
             if text.strip():
                 all_texts.append(text)
 
-        except Exception as e:
-            print(f"Erro ao processar {path.name}: {e}")
+        except Exception as error:
+            print(f"Erro ao processar {path.name}: {error}")
 
     final_text = "\n\n".join(all_texts)
 
