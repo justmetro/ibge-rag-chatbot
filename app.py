@@ -39,56 +39,194 @@ def aplicar_modo_escuro():
         st.markdown(
             """
             <style>
+                /* Fundo geral */
                 .stApp {
-                    background-color: #0e1117;
-                    color: #f5f5f5;
+                    background: linear-gradient(180deg, #081225 0%, #0b1730 100%);
+                    color: #e5e7eb;
                 }
 
+                .block-container {
+                    padding-top: 3rem;
+                    padding-bottom: 2rem;
+                }
+
+                /* Sidebar */
                 section[data-testid="stSidebar"] {
-                    background-color: #161b22;
-                    color: #f5f5f5;
+                    background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+                    border-right: 1px solid #1e293b;
                 }
 
-                div[data-testid="stMarkdownContainer"] {
-                    color: #f5f5f5;
+                section[data-testid="stSidebar"] * {
+                    color: #e5e7eb !important;
                 }
 
+                h1, h2, h3, h4, p, li, span, label {
+                    color: #e5e7eb !important;
+                }
+
+                /* Alert/info */
+                div[data-testid="stAlert"] {
+                    background: rgba(37, 99, 235, 0.18) !important;
+                    border: 1px solid #3b82f6 !important;
+                    border-radius: 14px !important;
+                }
+
+                div[data-testid="stAlert"] * {
+                    color: #e5e7eb !important;
+                }
+
+                /* Chat messages */
                 div[data-testid="stChatMessage"] {
-                    background-color: #161b22;
+                    background-color: rgba(15, 23, 42, 0.78);
+                    border: 1px solid #22304a;
+                    border-radius: 16px;
+                    padding: 0.85rem;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+                }
+
+                div[data-testid="stChatMessage"] * {
+                    color: #e5e7eb !important;
+                }
+
+                /* Expander */
+                [data-testid="stExpander"] {
+                    background-color: rgba(15, 23, 42, 0.82);
+                    border: 1px solid #334155;
                     border-radius: 12px;
                 }
 
-                div[data-testid="stTextInput"] input {
-                    background-color: #262730;
-                    color: #f5f5f5;
-                }
-
-                textarea {
-                    background-color: #262730 !important;
-                    color: #f5f5f5 !important;
-                }
-
-                code {
-                    color: #9cdcfe !important;
+                [data-testid="stExpander"] * {
+                    color: #e5e7eb !important;
                 }
 
                 pre {
-                    background-color: #1e1e1e !important;
-                    color: #f5f5f5 !important;
+                    background-color: #0b1220 !important;
+                    color: #d1d5db !important;
+                    border: 1px solid #263247;
+                    border-radius: 12px;
                 }
 
-                [data-testid="stExpander"] {
-                    background-color: #161b22;
-                    border: 1px solid #30363d;
-                    border-radius: 10px;
+                code {
+                    color: #93c5fd !important;
+                    background-color: transparent !important;
+                }
+
+                hr {
+                    border-color: #253249 !important;
+                }
+
+                div[data-testid="stCaptionContainer"] {
+                    color: #9ca3af !important;
+                }
+
+                header[data-testid="stHeader"],
+                footer {
+                    background-color: transparent !important;
+                }
+
+                [data-testid="stBottom"] {
+                    background-color: #0b1730 !important;
+                }
+
+                [data-testid="stBottom"] > div {
+                    background-color: #0b1730 !important;
+                }
+
+                /* Caixa externa do chat input */
+                div[data-testid="stChatInput"] {
+                    background: #0b1220 !important;
+                    border: 1px solid #1e3a5f !important;
+                    border-radius: 18px !important;
+                    padding: 0.55rem !important;
+                    box-shadow:
+                        0 0 0 1px rgba(59, 130, 246, 0.10),
+                        0 10px 28px rgba(0, 0, 0, 0.28) !important;
+                }
+
+                /* Remove fundo branco interno do Streamlit */
+                div[data-testid="stChatInput"] > div,
+                div[data-testid="stChatInput"] > div > div,
+                div[data-testid="stChatInput"] form,
+                div[data-testid="stChatInput"] form > div {
+                    background: #0b1220 !important;
+                }
+
+                /* INPUT ATIVO - mais vibrante */
+                div[data-testid="stChatInput"] textarea {
+                    background: linear-gradient(180deg, #17345d 0%, #10284a 100%) !important;
+                    color: #ffffff !important;
+                    border: 1.5px solid #60a5fa !important;
+                    border-radius: 999px !important;
+                    padding: 0.8rem 1rem !important;
+                    box-shadow:
+                        0 0 0 1px rgba(59, 130, 246, 0.20),
+                        0 0 18px rgba(59, 130, 246, 0.18);
+                }
+
+                div[data-testid="stChatInput"] textarea:focus {
+                    border: 1.5px solid #60a5fa !important;
+                    box-shadow:
+                        0 0 0 2px rgba(96, 165, 250, 0.18),
+                        0 0 24px rgba(59, 130, 246, 0.24) !important;
+                    outline: none !important;
+                }
+
+                div[data-testid="stChatInput"] textarea::placeholder {
+                    color: #cbd5e1 !important;
+                    opacity: 0.95 !important;
+                }
+
+                /* INPUT BLOQUEADO */
+                div[data-testid="stChatInput"] textarea:disabled,
+                div[data-testid="stChatInput"] textarea[disabled] {
+                    background: linear-gradient(180deg, #1a2740 0%, #162338 100%) !important;
+                    color: #ffffff !important;
+                    -webkit-text-fill-color: #ffffff !important;
+                    border: 1.5px solid #64748b !important;
+                    opacity: 1 !important;
+                    cursor: not-allowed !important;
+                    box-shadow: none !important;
+                }
+
+                div[data-testid="stChatInput"] textarea:disabled::placeholder,
+                div[data-testid="stChatInput"] textarea[disabled]::placeholder {
+                    color: #f8fafc !important;
+                    -webkit-text-fill-color: #f8fafc !important;
+                    opacity: 0.92 !important;
+                }
+
+                /* Botão enviar */
+                div[data-testid="stChatInput"] button {
+                    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+                    color: white !important;
+                    border: none !important;
+                    border-radius: 999px !important;
+                    width: 42px !important;
+                    height: 42px !important;
+                    box-shadow: 0 0 14px rgba(59, 130, 246, 0.25);
+                }
+
+                div[data-testid="stChatInput"] button:hover {
+                    background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%) !important;
+                }
+
+                div[data-testid="stChatInput"] button:disabled {
+                    background: #1e293b !important;
+                    color: #cbd5e1 !important;
+                    opacity: 1 !important;
+                }
+
+                button {
+                    border-radius: 10px !important;
+                }
+
+                [data-testid="stToggle"] label {
+                    color: #e5e7eb !important;
                 }
             </style>
             """,
             unsafe_allow_html=True
         )
-
-
-aplicar_modo_escuro()
 
 
 # -----------------------------
@@ -104,7 +242,15 @@ with st.sidebar:
     with col2:
         st.markdown("### IBGE RAG Chatbot")
 
-    st.toggle("Modo escuro", key="dark_mode")
+    dark_mode_value = st.toggle(
+        "Modo escuro",
+        value=st.session_state.dark_mode,
+        key="dark_mode_toggle"
+    )
+
+    if dark_mode_value != st.session_state.dark_mode:
+        st.session_state.dark_mode = dark_mode_value
+        st.rerun()
 
     st.markdown(
         """
@@ -146,6 +292,8 @@ with st.sidebar:
         st.session_state.pending_question = None
         st.session_state.is_generating = False
         st.rerun()
+
+aplicar_modo_escuro()
 
 
 # -----------------------------
