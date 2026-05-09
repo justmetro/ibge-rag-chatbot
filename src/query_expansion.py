@@ -53,7 +53,10 @@ def expand_query(question: str) -> str:
         ])
 
     if (
-        "homem" in question_lower
+        "sexo" in question_lower
+        or "genero" in question_lower
+        or "gênero" in question_lower
+        or "homem" in question_lower
         or "homens" in question_lower
         or "mulher" in question_lower
         or "mulheres" in question_lower
@@ -64,6 +67,7 @@ def expand_query(question: str) -> str:
             "mulher",
             "rendimento",
             "trabalho principal",
+            "indicadores segundo sexo",
         ])
 
     if "cor" in question_lower or "raça" in question_lower or "raca" in question_lower:

@@ -1,44 +1,82 @@
-Avaliacao simples do Retriever RAG
+Avaliacao do Retriever RAG
 ================================================================================
+
+Observacao:
+Esta avaliacao usa metricas heuristicas baseadas em termos esperados. Ela nao substitui um benchmark rotulado formal, mas ajuda a monitorar qualidade de recuperacao e latencia durante o desenvolvimento.
 
 Pergunta: Quais indicadores aparecem nas tabelas?
 Status: PASSOU
 Documentos retornados: 5
-Termos esperados: rendimento, trabalho
-Termos encontrados: rendimento, trabalho
-Latencia: 0.07s
+Termos esperados: rendimento, trabalho, rendimento medio, rendimento-hora
+Termos encontrados: rendimento, trabalho, rendimento medio, rendimento-hora
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.497s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas tem dados de rendimento?
 Status: PASSOU
 Documentos retornados: 5
-Termos esperados: rendimento, r$/mes
-Termos encontrados: rendimento, r$/mes
-Latencia: 0.017s
+Termos esperados: rendimento, r$/mes, r$/hora, trabalho principal
+Termos encontrados: rendimento, r$/mes, r$/hora, trabalho principal
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.073s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas possuem dados por sexo ou cor?
 Status: PASSOU
 Documentos retornados: 5
-Termos esperados: sexo, cor
-Termos encontrados: cor
-Latencia: 0.015s
+Termos esperados: sexo, cor, homem, mulher, branca
+Termos encontrados: sexo, cor, homem, mulher, branca
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.051s
 --------------------------------------------------------------------------------
 Pergunta: Quais sao os valores de rendimento medio real habitual do trabalho principal para Brasil, Norte e Rondonia?
 Status: PASSOU
 Documentos retornados: 5
-Termos esperados: brasil, norte, rond
-Termos encontrados: brasil, norte, rond
-Latencia: 0.023s
+Termos esperados: brasil, norte, rondonia, rendimento medio real habitual
+Termos encontrados: brasil, norte, rondonia, rendimento medio real habitual
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.031s
 --------------------------------------------------------------------------------
 Pergunta: Compare o rendimento medio real habitual do trabalho principal entre homens e mulheres.
 Status: PASSOU
 Documentos retornados: 5
-Termos esperados: homem, mulher
-Termos encontrados: homem, mulher
-Latencia: 0.017s
+Termos esperados: homem, mulher, sexo, rendimento medio real habitual
+Termos encontrados: homem, mulher, sexo, rendimento medio real habitual
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.117s
+--------------------------------------------------------------------------------
+Pergunta: Mostre os coeficientes de variacao dos indicadores de rendimento.
+Status: PASSOU
+Documentos retornados: 5
+Termos esperados: coeficientes de variacao, rendimento, brasil, norte
+Termos encontrados: coeficientes de variacao, rendimento, brasil, norte
+Precision@k: 1.0
+Recall proxy: 1.0
+MRR: 1.0
+NDCG: 1.0
+Latencia: 3.034s
 --------------------------------------------------------------------------------
 
 Resumo
-Total de testes: 5
-Testes aprovados: 5
+Total de testes: 6
+Testes aprovados: 6
 Taxa de sucesso simples: 100%
-Latencia media: 0.028s
+Precision@k medio: 1.000
+Recall proxy medio: 1.000
+MRR medio: 1.000
+NDCG medio: 1.000
+Latencia media: 3.134s
