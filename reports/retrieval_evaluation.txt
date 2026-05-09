@@ -6,39 +6,39 @@ Status: PASSOU
 Documentos retornados: 5
 Termos esperados: rendimento, trabalho
 Termos encontrados: rendimento, trabalho
-Latencia: 0.109s
+Latencia: 0.132s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas tem dados de rendimento?
 Status: PASSOU
 Documentos retornados: 5
 Termos esperados: rendimento, r$/mes
 Termos encontrados: rendimento, r$/mes
-Latencia: 0.013s
+Latencia: 0.019s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas possuem dados por sexo ou cor?
 Status: PASSOU
 Documentos retornados: 5
 Termos esperados: sexo, cor
 Termos encontrados: cor
-Latencia: 0.015s
+Latencia: 0.018s
 --------------------------------------------------------------------------------
 Pergunta: Quais sao os valores de rendimento medio real habitual do trabalho principal para Brasil, Norte e Rondonia?
 Status: PASSOU
 Documentos retornados: 5
 Termos esperados: brasil, norte, rond
 Termos encontrados: brasil, norte, rond
-Latencia: 0.021s
+Latencia: 0.027s
 --------------------------------------------------------------------------------
 Pergunta: Compare o rendimento medio real habitual do trabalho principal entre homens e mulheres.
 Status: PASSOU
 Documentos retornados: 5
 Termos esperados: homem, mulher
 Termos encontrados: homem, mulher
-Latencia: 0.018s
+Latencia: 0.021s
 --------------------------------------------------------------------------------
 
 Resumo
 Total de testes: 5
 Testes aprovados: 5
 Taxa de sucesso simples: 100%
-Latencia media: 0.035s
+Latencia media: 0.043s
