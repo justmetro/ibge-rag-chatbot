@@ -6,7 +6,7 @@ Chatbot experimental para responder perguntas sobre dados sociais brasileiros us
 
 O objetivo do projeto é demonstrar uma aplicação prática de Python, análise de dados, embeddings, banco vetorial e interface web com Streamlit.
 
-O sistema permite que o usuário faça perguntas sobre indicadores sociais brasileiros e retorna trechos relevantes extraídos de tabelas públicas do IBGE.
+O sistema permite que o usuário faça perguntas sobre indicadores sociais brasileiros e retorna respostas em linguagem natural com base em trechos relevantes extraídos de tabelas públicas do IBGE.
 
 ## Tecnologias utilizadas
 
@@ -15,6 +15,7 @@ O sistema permite que o usuário faça perguntas sobre indicadores sociais brasi
 - LangChain
 - ChromaDB
 - Sentence Transformers
+- Gemini API
 - Pandas
 - OpenPyXL
 - xlrd
@@ -25,9 +26,14 @@ O sistema permite que o usuário faça perguntas sobre indicadores sociais brasi
 - Conversão das tabelas para texto pesquisável
 - Criação de base vetorial com ChromaDB
 - Busca semântica com embeddings locais
+- Expansão simples de consultas para melhorar recuperação
+- Filtro por metadata para separar indicadores e coeficientes de variação
+- Integração com Gemini API para síntese em linguagem natural
+- Fallback demo caso a API generativa não esteja disponível
 - Interface web com Streamlit
 - Exibição dos trechos e fontes utilizadas
-- Modo demo sem dependência de API paga
+- Modo escuro
+- Bloqueio do input enquanto a resposta está sendo gerada
 
 ## Deploy
 
@@ -55,6 +61,7 @@ Exemplos de tabelas carregadas:
 - Indicadores por Grandes Regiões e Unidades da Federação
 - Indicadores por sexo e cor ou raça
 - Indicadores de rendimento do trabalho
+- Coeficientes de variação dos indicadores de rendimento
 
 ## Exemplos de perguntas
 
@@ -62,6 +69,9 @@ Exemplos de tabelas carregadas:
 - As tabelas têm dados de rendimento?
 - As tabelas possuem dados por sexo ou cor?
 - Quais recortes territoriais aparecem?
+- Compare o rendimento entre homens e mulheres.
+- Mostre os coeficientes de variação dos indicadores de rendimento.
+- Quais são os valores de rendimento médio real habitual do trabalho principal para Brasil, Norte e Rondônia?
 
 ## Estrutura do projeto
 
@@ -89,6 +99,7 @@ ibge-rag-chatbot/
 │   ├── pdf_loader.py
 │   ├── prompts.py
 │   ├── embedder.py
+│   ├── document_filters.py
 │   └── query_expansion.py
 └── .streamlit/
     └── config.toml
@@ -107,7 +118,7 @@ RAGBot
   ↓
 Expansão simples de consulta
   ↓
-Retriever ChromaDB
+Retriever ChromaDB com filtro por metadata
   ↓
 Trechos relevantes das tabelas
   ↓
@@ -120,12 +131,14 @@ Principais módulos:
 
 - `app.py`: interface web com Streamlit
 - `src/table_loader.py`: leitura e conversão de tabelas do IBGE em texto pesquisável
+- `src/pdf_loader.py`: loader opcional para documentos PDF
 - `src/embedder.py`: configuração do modelo de embeddings local
-- `src/vectorstore.py`: criação e carregamento da base vetorial ChromaDB
+- `src/vectorstore.py`: criação, carregamento e consulta da base vetorial ChromaDB
 - `src/query_expansion.py`: expansão simples de consultas para melhorar recuperação
+- `src/document_filters.py`: regras de intenção para lidar com coeficientes de variação
 - `src/rag.py`: orquestração do fluxo RAG
 - `src/prompts.py`: prompts utilizados pelo Gemini e mensagens de fallback
-- `scripts/evaluate_retrieval.py`: avaliação simples da recuperação semântica
+- `scripts/evaluate_retrieval.py`: avaliação da recuperação semântica
 
 ## Decisões técnicas
 
@@ -143,33 +156,48 @@ O ChromaDB foi escolhido como banco vetorial por ser simples de configurar, pers
 
 ### Gemini API com fallback
 
-Quando a variável `GEMINI_API_KEY` está configurada, o app usa Gemini para sintetizar respostas em linguagem natural com base nos trechos recuperados. Caso a API não esteja disponível, o sistema mantém um modo demo que retorna síntese simples e trechos relevantes.
+Quando a variável `GEMINI_API_KEY` está configurada, o app usa Gemini para sintetizar respostas em linguagem natural com base nos trechos recuperados. Caso a API não esteja disponível ou atinja limite temporário de uso, o sistema mantém um modo demo que retorna uma síntese simples e os trechos relevantes.
 
 ### Expansão simples de consulta
 
-Foi adicionada uma etapa de expansão simples de consulta para melhorar a recuperação em perguntas sobre sexo, cor ou raça, rendimento e recortes territoriais. Essa estratégia ajudou a recuperar melhor tabelas específicas, como comparações entre homens e mulheres.
+Foi adicionada uma etapa de expansão simples de consulta para melhorar a recuperação em perguntas sobre sexo, cor ou raça, rendimento, valores monetários, recortes territoriais e coeficientes de variação.
+
+Essa estratégia ajudou a recuperar melhor tabelas específicas, como comparações entre homens e mulheres ou perguntas sobre rendimento por Brasil, Norte e Rondônia.
+
+### Filtro por metadata
+
+As tabelas de coeficientes de variação são identificadas durante a criação dos documentos e recebem metadata específica no ChromaDB.
+
+Assim, quando o usuário pede valores de rendimento, o sistema evita recuperar coeficientes de variação como se fossem valores monetários. Quando o usuário pede explicitamente coeficientes, essas tabelas são incluídas na busca.
 
 ## Avaliação do retriever
 
-Foi criado um script simples de avaliação em `scripts/evaluate_retrieval.py`, com perguntas representativas sobre os dados carregados.
+Foi criado um script de avaliação em `scripts/evaluate_retrieval.py`, com perguntas representativas sobre os dados carregados.
 
 A avaliação verifica:
 
 - Quantidade de documentos retornados
 - Presença de termos esperados nos trechos recuperados
-- Latência da recuperação
-- Taxa simples de sucesso
+- Precision@k
+- Recall proxy
+- MRR
+- NDCG
+- Latência média
 
 Resultado atual da avaliação:
 
 ```text
-Total de testes: 5
-Testes aprovados: 5
+Total de testes: 6
+Testes aprovados: 6
 Taxa de sucesso simples: 100%
-Latência média: 0.020s
+Precision@k médio: 1.000
+Recall proxy médio: 1.000
+MRR médio: 1.000
+NDCG médio: 1.000
+Latência média: 3.134s
 ```
 
-Essa avaliação não substitui métricas formais de Information Retrieval, mas ajuda a validar rapidamente se o retriever está retornando trechos úteis para perguntas comuns do projeto.
+Essa avaliação usa métricas heurísticas baseadas em termos esperados. Ela não substitui um benchmark formal rotulado, mas ajuda a monitorar qualidade de recuperação e latência durante o desenvolvimento.
 
 ## Como rodar localmente
 
@@ -198,11 +226,28 @@ Crie o índice vetorial:
 python -c "from src.vectorstore import create_vectorstore; create_vectorstore(); print('Índice criado com sucesso')"
 ```
 
+Rode a avaliação do retriever:
+
+```bash
+python scripts/evaluate_retrieval.py
+```
+
 Rode o app:
 
 ```bash
 streamlit run app.py
 ```
+
+## Variáveis de ambiente
+
+Crie um arquivo `.env` local com:
+
+```env
+GEMINI_API_KEY=sua_chave_aqui
+RETRIEVER_K=5
+```
+
+A chave Gemini é opcional. Sem ela, o app funciona em modo demo.
 
 ## Status do projeto
 
@@ -220,13 +265,42 @@ A versão atual já possui deploy público, recuperação semântica com ChromaD
 
 Apesar disso, o projeto ainda pode evoluir em alguns pontos:
 
-- Melhorar a avaliação do RAG com métricas mais formais de recuperação, como precision@k e recall@k
+- Criar testes unitários com `pytest`
+- Adicionar CI/CD com GitHub Actions
 - Testar diferentes tamanhos de chunk e valores de `k` no retriever
 - Melhorar o tratamento de tabelas complexas do IBGE, especialmente cabeçalhos com múltiplas linhas
 - Incluir mais bases públicas sobre educação, trabalho, rendimento e desigualdade
 - Exibir gráficos e tabelas resumidas diretamente na interface
 - Explorar deploy alternativo em Hugging Face Spaces
 
-## Aprendizados
+## Aprendizados e insights
 
-Este projeto foi desenvolvido como uma aplicação prática de RAG aplicada a dados públicos brasileiros. Durante o desenvolvimento, foram trabalhados conceitos de processamento de dados, embeddings, busca semântica, banco vetorial, organização de projeto Python e construção de interface com Streamlit.
+### Tabelas reais exigem tratamento diferente de PDFs
+
+O projeto começou como um RAG voltado para documentos, mas as fontes públicas do IBGE frequentemente aparecem em formato tabular. Por isso, foi necessário transformar planilhas `.xls`, `.xlsx` e `.csv` em texto estruturado antes da indexação.
+
+Essa decisão tornou o projeto mais alinhado com aplicações reais de dados públicos.
+
+### Query expansion melhorou a recuperação
+
+Perguntas curtas como “As tabelas possuem dados por sexo ou cor?” nem sempre recuperavam os melhores trechos inicialmente.
+
+A solução foi adicionar expansão simples de consulta com termos como `sexo`, `homem`, `mulher`, `cor ou raça`, `rendimento` e `trabalho principal`.
+
+Após essa melhoria, a avaliação passou a recuperar corretamente os termos esperados para as perguntas de teste.
+
+### Metadata reduziu ruído na recuperação
+
+As tabelas de coeficientes de variação apareciam em perguntas sobre valores de rendimento, confundindo o contexto enviado ao Gemini.
+
+Para resolver isso, os documentos passaram a receber metadata indicando se pertencem ou não a tabelas de coeficientes. O retriever usa essa informação para filtrar resultados quando a pergunta pede valores monetários, mas preserva os coeficientes quando eles são solicitados explicitamente.
+
+### Embeddings locais são suficientes para o MVP
+
+O uso de embeddings locais com `sentence-transformers/all-MiniLM-L6-v2` foi suficiente para o tamanho atual da base. Isso permitiu manter a recuperação semântica sem custo de API, deixando a API generativa apenas para a síntese final da resposta.
+
+### Avaliação simples já ajuda a encontrar falhas reais
+
+Mesmo uma avaliação heurística baseada em termos esperados foi útil para identificar falhas na recuperação, como perguntas sobre sexo e cor ou mistura entre valores de rendimento e coeficientes de variação.
+
+A avaliação evoluiu para incluir Precision@k, Recall proxy, MRR e NDCG, tornando o acompanhamento da qualidade do retriever mais transparente.
