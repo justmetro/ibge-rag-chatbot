@@ -58,3 +58,14 @@ def test_filter_retrieved_documents_keeps_coefficients_when_requested():
     )
 
     assert len(filtered) == 2
+
+def test_user_wants_coefficient_ignores_cv_inside_other_words():
+    question = "Quais indicadores aparecem nas tabelas de cvrendimento?"
+
+    assert user_wants_coefficient(question) is False
+
+
+def test_user_wants_coefficient_detects_standalone_cv():
+    question = "Qual o CV do rendimento no Norte?"
+
+    assert user_wants_coefficient(question) is True

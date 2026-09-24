@@ -8,7 +8,13 @@ territorial cuts and coefficient-of-variation tables.
 
 The original user question is preserved. Extra terms are appended only to
 help the retriever find better chunks.
+
+Keywords are matched as whole words, ignoring accents: "cor" must not match
+"recortes", otherwise territorial questions get race/color terms appended.
 """
+
+from src.document_filters import user_wants_coefficient
+from src.text_utils import contains_any_term
 
 
 def expand_query(question: str) -> str:
@@ -28,17 +34,13 @@ def expand_query(question: str) -> str:
 
     Examples:
         >>> expand_query("Compare homens e mulheres")
-        'Compare homens e mulheres sexo homem mulher rendimento trabalho principal'
+        'Compare homens e mulheres sexo homem mulher rendimento trabalho principal indicadores segundo sexo'
     """
-    question_lower = question.lower()
     extra_terms = []
 
-    asks_for_values = (
-        "valor" in question_lower
-        or "valores" in question_lower
-        or "quanto" in question_lower
-        or "r$" in question_lower
-        or "reais" in question_lower
+    asks_for_values = contains_any_term(
+        question,
+        ["valor", "valores", "quanto", "r$", "reais"],
     )
 
     if asks_for_values:
@@ -52,14 +54,9 @@ def expand_query(question: str) -> str:
             "Rondônia",
         ])
 
-    if (
-        "sexo" in question_lower
-        or "genero" in question_lower
-        or "gênero" in question_lower
-        or "homem" in question_lower
-        or "homens" in question_lower
-        or "mulher" in question_lower
-        or "mulheres" in question_lower
+    if contains_any_term(
+        question,
+        ["sexo", "gênero", "homem", "homens", "mulher", "mulheres"],
     ):
         extra_terms.extend([
             "sexo",
@@ -70,7 +67,7 @@ def expand_query(question: str) -> str:
             "indicadores segundo sexo",
         ])
 
-    if "cor" in question_lower or "raça" in question_lower or "raca" in question_lower:
+    if contains_any_term(question, ["cor", "raça"]):
         extra_terms.extend([
             "cor ou raça",
             "branca",
@@ -79,7 +76,17 @@ def expand_query(question: str) -> str:
             "rendimento",
         ])
 
-    if "rondônia" in question_lower or "rondonia" in question_lower:
+    if contains_any_term(
+        question,
+        ["territorial", "territoriais", "região", "regiões", "estado", "estados", "uf", "ufs"],
+    ):
+        extra_terms.extend([
+            "Brasil",
+            "Grandes Regiões",
+            "Unidades da Federação",
+        ])
+
+    if contains_any_term(question, ["rondônia"]):
         extra_terms.extend([
             "Brasil",
             "Norte",
@@ -88,7 +95,7 @@ def expand_query(question: str) -> str:
             "Unidades da Federação",
         ])
 
-    if "rendimento" in question_lower:
+    if contains_any_term(question, ["rendimento", "rendimentos"]):
         extra_terms.extend([
             "rendimento médio real habitual",
             "rendimento-hora",
@@ -96,13 +103,7 @@ def expand_query(question: str) -> str:
             "R$/hora",
         ])
 
-    if (
-        "coeficiente" in question_lower
-        or "coeficientes" in question_lower
-        or "variação" in question_lower
-        or "variacao" in question_lower
-        or "cv" in question_lower
-    ):
+    if user_wants_coefficient(question):
         extra_terms.extend([
             "coeficientes de variação",
             "coeficiente de variação dos indicadores",
