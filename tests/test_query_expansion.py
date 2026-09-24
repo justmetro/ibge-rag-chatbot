@@ -40,3 +40,21 @@ def test_expand_query_without_known_topic_returns_original_question():
     expanded = expand_query(question)
 
     assert expanded == question
+
+def test_expand_query_does_not_match_cor_inside_recortes():
+    question = "Quais recortes territoriais aparecem?"
+
+    expanded = expand_query(question).lower()
+
+    assert "cor ou raça" not in expanded
+    assert "grandes regiões" in expanded
+    assert "unidades da federação" in expanded
+
+
+def test_expand_query_matches_terms_without_accents():
+    question = "Tem dados por raca em Rondonia?"
+
+    expanded = expand_query(question).lower()
+
+    assert "cor ou raça" in expanded
+    assert "grandes regiões" in expanded

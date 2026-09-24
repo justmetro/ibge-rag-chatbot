@@ -10,13 +10,14 @@ Example:
     python src/pdf_loader.py
 """
 
+import sys
 from pathlib import Path
 
 from pypdf import PdfReader
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-PDFS_DIR = Path("data/pdfs")
-OUTPUT_PATH = Path("data/processed_pdfs.txt")
+from src.config import PDFS_DIR, PROCESSED_PDFS_PATH as OUTPUT_PATH
 
 SUPPORTED_EXTENSIONS = [".pdf"]
 
@@ -52,8 +53,9 @@ def extract_text_from_pdf(path: Path) -> str:
         path: Path to the PDF file.
 
     Returns:
-        Text extracted from all readable pages, including source and page
-        metadata in plain text.
+        Text extracted from all readable pages. Each page becomes a block
+        preceded by the '=' separator used by the vector store, with source
+        and page metadata in plain text.
 
     Raises:
         Exception: Propagates errors raised by pypdf when the file cannot be
@@ -72,7 +74,10 @@ def extract_text_from_pdf(path: Path) -> str:
                 f"Fonte: {path.name}\nPágina: {page_number}\n\n{cleaned}"
             )
 
-    return "\n\n" + ("=" * 80) + "\n\n".join(pages_text)
+    return "\n\n".join(
+        ("=" * 80) + "\n" + page_text
+        for page_text in pages_text
+    )
 
 
 def build_documents_from_pdfs() -> None:
@@ -89,11 +94,11 @@ def build_documents_from_pdfs() -> None:
     if not PDFS_DIR.exists():
         raise FileNotFoundError("A pasta data/pdfs não existe.")
 
-    files = [
+    files = sorted(
         path
         for path in PDFS_DIR.iterdir()
         if path.suffix.lower() in SUPPORTED_EXTENSIONS
-    ]
+    )
 
     if not files:
         raise FileNotFoundError("Nenhum PDF encontrado em data/pdfs.")

@@ -1,5 +1,16 @@
+# Ambientes virtuais
 venv/
+.venv/
+
+# Segredos
 .env
+.streamlit/secrets.toml
+
+# Python
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Artefatos gerados
 .chroma/
+data/processed_pdfs.txt

@@ -1,6 +1,12 @@
+import logging
+
 import streamlit as st
 
 from src.rag import RAGBot
+from src.vectorstore import get_vectorstore
+
+
+logger = logging.getLogger(__name__)
 
 
 st.set_page_config(
@@ -16,9 +22,6 @@ st.set_page_config(
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-if "bot" not in st.session_state:
-    st.session_state.bot = None
 
 if "is_generating" not in st.session_state:
     st.session_state.is_generating = False
@@ -288,7 +291,6 @@ with st.sidebar:
 
     if st.button("Limpar conversa", key="limpar_conversa_sidebar"):
         st.session_state.messages = []
-        st.session_state.bot = None
         st.session_state.pending_question = None
         st.session_state.is_generating = False
         st.rerun()
@@ -329,10 +331,12 @@ st.divider()
 # Utilidades
 # -----------------------------
 
+@st.cache_resource(show_spinner="Preparando a base vetorial (pode levar alguns minutos na primeira execução)...")
 def carregar_bot():
-    if st.session_state.bot is None:
-        st.session_state.bot = RAGBot()
-    return st.session_state.bot
+    # Compartilhado entre todas as sessões: o modelo de embeddings e o
+    # índice ChromaDB são carregados uma única vez por processo.
+    get_vectorstore()
+    return RAGBot()
 
 
 def renderizar_mensagem(message):
@@ -422,8 +426,12 @@ if st.session_state.is_generating and st.session_state.pending_question:
                     }
                 )
 
-            except Exception as e:
-                erro = f"Erro: {e}"
+            except Exception:
+                logger.exception("Erro ao responder a pergunta.")
+                erro = (
+                    "Não foi possível responder agora. "
+                    "Tente novamente em instantes."
+                )
                 st.error(erro)
 
                 st.session_state.messages.append(

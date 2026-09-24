@@ -12,6 +12,8 @@ to replace semantic retrieval; instead, they encode domain-specific rules
 that are easy to inspect and adjust.
 """
 
+from src.text_utils import contains_any_term, normalize_text
+
 
 def user_wants_coefficient(question: str) -> bool:
     """
@@ -28,17 +30,15 @@ def user_wants_coefficient(question: str) -> bool:
         True if the question appears to request coefficient-of-variation
         information; False otherwise.
     """
-    question_lower = question.lower()
-
     coefficient_terms = [
         "coeficiente",
         "coeficientes",
         "variação",
-        "variacao",
         "cv",
+        "cvs",
     ]
 
-    return any(term in question_lower for term in coefficient_terms)
+    return contains_any_term(question, coefficient_terms)
 
 
 def is_coefficient_document(document_text: str) -> bool:
@@ -52,14 +52,7 @@ def is_coefficient_document(document_text: str) -> bool:
         True if the text contains terms associated with coefficient-of-
         variation tables; False otherwise.
     """
-    text_lower = document_text.lower()
-
-    coefficient_document_terms = [
-        "coeficientes de variação",
-        "coeficientes de variacao",
-    ]
-
-    return any(term in text_lower for term in coefficient_document_terms)
+    return "coeficientes de variacao" in normalize_text(document_text)
 
 
 def filter_retrieved_documents(question: str, docs):

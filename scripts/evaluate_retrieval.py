@@ -19,9 +19,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
+from src.config import REPORTS_DIR, RETRIEVER_K
 from src.document_filters import user_wants_coefficient
 from src.query_expansion import expand_query
-from src.vectorstore import RETRIEVER_K, retrieve_documents
+from src.text_utils import normalize_text
 
 
 TEST_QUERIES = [
@@ -54,6 +55,15 @@ TEST_QUERIES = [
         ],
     },
     {
+        "question": "Quais recortes territoriais aparecem?",
+        "expected_terms": [
+            "brasil",
+            "grandes regioes",
+            "unidades da federacao",
+            "norte",
+        ],
+    },
+    {
         "question": "Quais sao os valores de rendimento medio real habitual do trabalho principal para Brasil, Norte e Rondonia?",
         "expected_terms": [
             "brasil",
@@ -81,39 +91,6 @@ TEST_QUERIES = [
         ],
     },
 ]
-
-
-def normalize_text(text: str) -> str:
-    """
-    Normalize text for simple keyword matching.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Lowercase text with common Portuguese accents removed.
-    """
-    replacements = {
-        "á": "a",
-        "à": "a",
-        "ã": "a",
-        "â": "a",
-        "é": "e",
-        "ê": "e",
-        "í": "i",
-        "ó": "o",
-        "ô": "o",
-        "õ": "o",
-        "ú": "u",
-        "ç": "c",
-    }
-
-    text = text.lower()
-
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-
-    return text
 
 
 def term_matches(text: str, terms: list[str]) -> list[str]:
@@ -263,6 +240,10 @@ def evaluate_query(question: str, expected_terms: list[str]) -> dict:
     expanded_question = expand_query(question)
     include_coefficients = user_wants_coefficient(question)
 
+    # Imported here so the metric functions can be tested without loading
+    # the embedding model and ChromaDB.
+    from src.vectorstore import retrieve_documents
+
     start = time.perf_counter()
 
     docs = retrieve_documents(
@@ -327,6 +308,34 @@ def print_result(result: dict) -> None:
     print("-" * 80)
 
 
+def summary_lines(results: list[dict]) -> list[str]:
+    """
+    Build the aggregated summary shown in the console and in the report.
+
+    Args:
+        results: List of query evaluation dictionaries.
+
+    Returns:
+        Summary lines without trailing newlines.
+    """
+    total = len(results)
+    passed = sum(1 for result in results if result["passed"])
+
+    def average(key: str) -> float:
+        return sum(result[key] for result in results) / total
+
+    return [
+        f"Total de testes: {total}",
+        f"Testes aprovados: {passed}",
+        f"Taxa de sucesso simples: {passed / total:.0%}",
+        f"Precision@k medio: {average('precision_at_k'):.3f}",
+        f"Recall proxy medio: {average('recall_proxy'):.3f}",
+        f"MRR medio: {average('mrr'):.3f}",
+        f"NDCG medio: {average('ndcg'):.3f}",
+        f"Latencia media: {average('latency_seconds'):.3f}s",
+    ]
+
+
 def save_report(results: list[dict], output_path: Path) -> None:
     """
     Save evaluation results to a text report.
@@ -335,14 +344,6 @@ def save_report(results: list[dict], output_path: Path) -> None:
         results: List of query evaluation dictionaries.
         output_path: Destination report path.
     """
-    total = len(results)
-    passed = sum(1 for result in results if result["passed"])
-
-    avg_precision = sum(result["precision_at_k"] for result in results) / total
-    avg_recall = sum(result["recall_proxy"] for result in results) / total
-    avg_mrr = sum(result["mrr"] for result in results) / total
-    avg_ndcg = sum(result["ndcg"] for result in results) / total
-    avg_latency = sum(result["latency_seconds"] for result in results) / total
 
     with output_path.open("w", encoding="utf-8") as file:
         file.write("Avaliacao do Retriever RAG\n")
@@ -371,14 +372,9 @@ def save_report(results: list[dict], output_path: Path) -> None:
             file.write("-" * 80 + "\n")
 
         file.write("\nResumo\n")
-        file.write(f"Total de testes: {total}\n")
-        file.write(f"Testes aprovados: {passed}\n")
-        file.write(f"Taxa de sucesso simples: {passed / total:.0%}\n")
-        file.write(f"Precision@k medio: {avg_precision:.3f}\n")
-        file.write(f"Recall proxy medio: {avg_recall:.3f}\n")
-        file.write(f"MRR medio: {avg_mrr:.3f}\n")
-        file.write(f"NDCG medio: {avg_ndcg:.3f}\n")
-        file.write(f"Latencia media: {avg_latency:.3f}s\n")
+
+        for line in summary_lines(results):
+            file.write(line + "\n")
 
 
 def main() -> None:
@@ -390,6 +386,11 @@ def main() -> None:
     print("\n=== Avaliacao do Retriever RAG ===\n")
     print(f"Retriever k configurado: {RETRIEVER_K}\n")
 
+    # Load the model and index before timing, so latency reflects queries only.
+    from src.vectorstore import get_vectorstore
+
+    get_vectorstore()
+
     for item in TEST_QUERIES:
         result = evaluate_query(
             question=item["question"],
@@ -399,29 +400,14 @@ def main() -> None:
         results.append(result)
         print_result(result)
 
-    total = len(results)
-    passed = sum(1 for result in results if result["passed"])
-
-    avg_precision = sum(result["precision_at_k"] for result in results) / total
-    avg_recall = sum(result["recall_proxy"] for result in results) / total
-    avg_mrr = sum(result["mrr"] for result in results) / total
-    avg_ndcg = sum(result["ndcg"] for result in results) / total
-    avg_latency = sum(result["latency_seconds"] for result in results) / total
-
     print("\n=== Resumo ===")
-    print(f"Total de testes: {total}")
-    print(f"Testes aprovados: {passed}")
-    print(f"Taxa de sucesso simples: {passed / total:.0%}")
-    print(f"Precision@k medio: {avg_precision:.3f}")
-    print(f"Recall proxy medio: {avg_recall:.3f}")
-    print(f"MRR medio: {avg_mrr:.3f}")
-    print(f"NDCG medio: {avg_ndcg:.3f}")
-    print(f"Latencia media: {avg_latency:.3f}s")
 
-    output_dir = Path("reports")
-    output_dir.mkdir(exist_ok=True)
+    for line in summary_lines(results):
+        print(line)
 
-    output_path = output_dir / "retrieval_evaluation.txt"
+    REPORTS_DIR.mkdir(exist_ok=True)
+
+    output_path = REPORTS_DIR / "retrieval_evaluation.txt"
 
     save_report(results, output_path)
 
