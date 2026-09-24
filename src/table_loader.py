@@ -12,13 +12,14 @@ Example:
     python src/table_loader.py
 """
 
+import sys
 from pathlib import Path
 
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-TABLES_DIR = Path("data/tables")
-OUTPUT_PATH = Path("data/documents.txt")
+from src.config import DOCUMENTS_PATH as OUTPUT_PATH, TABLES_DIR
 
 SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".xls"]
 
@@ -195,11 +196,11 @@ def build_documents_from_tables() -> None:
     if not TABLES_DIR.exists():
         raise FileNotFoundError("A pasta data/tables não existe.")
 
-    files = [
+    files = sorted(
         path
         for path in TABLES_DIR.iterdir()
         if path.suffix.lower() in SUPPORTED_EXTENSIONS
-    ]
+    )
 
     if not files:
         raise FileNotFoundError(

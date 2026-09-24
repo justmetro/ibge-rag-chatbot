@@ -13,7 +13,7 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.497s
+Latencia: 0.027s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas tem dados de rendimento?
 Status: PASSOU
@@ -24,7 +24,7 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.073s
+Latencia: 0.033s
 --------------------------------------------------------------------------------
 Pergunta: As tabelas possuem dados por sexo ou cor?
 Status: PASSOU
@@ -35,7 +35,18 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.051s
+Latencia: 0.042s
+--------------------------------------------------------------------------------
+Pergunta: Quais recortes territoriais aparecem?
+Status: PASSOU
+Documentos retornados: 5
+Termos esperados: brasil, grandes regioes, unidades da federacao, norte
+Termos encontrados: brasil, grandes regioes, unidades da federacao
+Precision@k: 1.0
+Recall proxy: 0.75
+MRR: 1.0
+NDCG: 1.0
+Latencia: 0.043s
 --------------------------------------------------------------------------------
 Pergunta: Quais sao os valores de rendimento medio real habitual do trabalho principal para Brasil, Norte e Rondonia?
 Status: PASSOU
@@ -46,7 +57,7 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.031s
+Latencia: 0.056s
 --------------------------------------------------------------------------------
 Pergunta: Compare o rendimento medio real habitual do trabalho principal entre homens e mulheres.
 Status: PASSOU
@@ -57,7 +68,7 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.117s
+Latencia: 0.041s
 --------------------------------------------------------------------------------
 Pergunta: Mostre os coeficientes de variacao dos indicadores de rendimento.
 Status: PASSOU
@@ -68,15 +79,15 @@ Precision@k: 1.0
 Recall proxy: 1.0
 MRR: 1.0
 NDCG: 1.0
-Latencia: 3.034s
+Latencia: 0.032s
 --------------------------------------------------------------------------------
 
 Resumo
-Total de testes: 6
-Testes aprovados: 6
+Total de testes: 7
+Testes aprovados: 7
 Taxa de sucesso simples: 100%
 Precision@k medio: 1.000
-Recall proxy medio: 1.000
+Recall proxy medio: 0.964
 MRR medio: 1.000
 NDCG medio: 1.000
-Latencia media: 3.134s
+Latencia media: 0.039s
